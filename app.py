@@ -23,7 +23,7 @@ if not st.session_state.authenticated:
             st.error("รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
     st.stop()
 
-# --- แถบด้านข้าง (Sidebar) ---
+# --- แถบด้านข้าง (Sidebar) ตามแบบที่คุณต้องการ ---
 with st.sidebar:
     st.markdown("### 🏢 Permatech Asia")
     st.markdown("<p style='color: gray; font-size: 13px; margin-top: -15px;'>Summary Project Record</p>", unsafe_allow_html=True)
@@ -44,20 +44,26 @@ search_query = st.text_input("พิมพ์คำค้นหา...", placehol
 
 st.markdown("---")
 
-# --- 📌 ส่วนดึงข้อมูลและระบบกรองข้อมูล (นำตารางของคุณมาใส่ตรงนี้) ---
-# ตัวอย่าง สมมติว่าคุณมี DataFrame ชื่อ df (ให้แทนที่ df ด้วยตัวแปรดึงข้อมูล Google Sheets ของคุณจริง ๆ)
-# เช่น df = pd.read_csv("ลิงก์ Google Sheets ของคุณ")
-# โค้ดจำลองสำหรับทดสอบ (ให้เปลี่ยนเป็นข้อมูลจริงของคุณ):
-data = {
-    "No.Job": ["JOB-001", "JOB-002", "JOB-003", "JOB-004"],
-    "ชื่อโครงการ": ["ระบบติดตามงาน", "พัฒนาแอปภายใน", "ปรับปรุงระบบฐานข้อมูล", "ติดตั้งอุปกรณ์เน็ตเวิร์ก"],
-    "สถานะ": ["กำลังดำเนินการ", "เสร็จสิ้น", "กำลังดำเนินการ", "รอดำเนินการ"]
-}
-df = pd.DataFrame(data)
+# ==========================================
+# 📌 นำโค้ดดึงข้อมูล Google Sheets เดิมของคุณมาใส่ตรงนี้ครับ!
+# ตัวอย่างเช่น: 
+# df = pd.read_csv("ลิงก์ CSV ของ Google Sheets คุณ")
+# หรือโค้ดเดิมที่คุณเคยใช้ดึง Google Sheets
+# ==========================================
+# (ตัวอย่างการดึงข้อมูล ให้เปลี่ยนบรรทัดล่างนี้เป็นโค้ดดึง Google Sheets ของคุณจริง ๆ)
+try:
+    # แทนที่บรรทัดด้านล่างนี้ด้วยโค้ดดึงข้อมูล Google Sheets เดิมของคุณ
+    # เช่น df = pd.read_csv("YOUR_GOOGLE_SHEET_CSV_URL")
+    
+    # อันนี้เป็นโค้ดดึงข้อมูลตัวอย่างเดิมที่คุณเคยใช้:
+    df = pd.read_csv("https://docs.google.com/spreadsheets/d/your_sheet_id/export?format=csv") # <--- เปลี่ยนตรงนี้เป็นลิงก์ของคุณ
+    
+except Exception as e:
+    # หากยังไม่ได้ใส่ลิงก์จริง ให้สร้างตารางเปล่าไว้ก่อนเพื่อไม่ให้เว็บพัง
+    df = pd.DataFrame(columns=["No.Job", "ชื่อโครงการ", "สถานะ"])
 
-# ⚙️ ระบบกรองข้อมูลจากช่องค้นหา
+# --- ระบบกรองข้อมูลด้วยช่องค้นหา ---
 if search_query:
-    # แปลงข้อความในตารางและคำค้นหาเป็นตัวพิมพ์เล็กทั้งหมด เพื่อให้ค้นหาง่าย (ไม่ 0 และไม่ต้องสนตัวพิมพ์เล็กใหญ่)
     mask = df.astype(str).apply(lambda x: x.str.contains(search_query, case=False, na=False)).any(axis=1)
     filtered_df = df[mask]
 else:
