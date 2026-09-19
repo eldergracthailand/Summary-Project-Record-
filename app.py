@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- 🔒 ระบบรหัสผ่านเดิม (Password Protection) ---
+# --- ส่วนของการใส่รหัสผ่าน (Password Protection) ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -23,27 +23,29 @@ if not st.session_state.authenticated:
             st.error("รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
     st.stop()
 
-# --- แถบด้านข้าง (Sidebar) คงตราบริษัทและปุ่มออกจากระบบไว้ ---
+# --- แถบด้านข้าง (Sidebar) ตามแบบเป๊ะ ---
 with st.sidebar:
     st.markdown("### 🏢 Permatech Asia")
     st.markdown("<p style='color: gray; font-size: 13px; margin-top: -15px;'>Summary Project Record</p>", unsafe_allow_html=True)
-    st.markdown("---")
     
-    # ช่องค้นหาข้อมูลที่ Sidebar
-    st.markdown("### 🔍 ค้นหาข้อมูล")
-    search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อโครงการ, รหัส...")
-
-    st.markdown("---")
+    # ดันปุ่มออกจากระบบลงมาด้านล่างสุดให้เหมือนในภาพ
+    st.markdown("<br>" * 15, unsafe_allow_html=True)
     if st.button("ออกจากระบบ", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
 
-# --- เนื้อหาหลักของเว็บไซต์ (เอาแถบแจ้งเตือนสีเขียวออกเรียบร้อย) ---
+# --- เนื้อหาหลักของเว็บไซต์ ---
 st.markdown("<h1 style='color: #1e3a8a;'>📊 Summary Project Record</h1>", unsafe_allow_html=True)
-st.markdown("ระบบติดตามและสรุปข้อมูลโครงการภายในบริษัท Permatech Asia")
+st.markdown("สรุปข้อมูลโครงการภายในบริษัท Permatech Asia")
 st.markdown("---")
 
-# พื้นที่แสดงตารางข้อมูล (ไม่มีข้อความแจ้งเตือนกวนใจ)
+# 🔍 ช่องค้นหาตรงกลางหน้าจอตามแบบ
+st.markdown("### 🔍 ค้นหาข้อมูล")
+search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อโครงการ, No.Job")
+
+st.markdown("---")
+
+# พื้นที่แสดงตารางข้อมูล
 st.subheader("📋 รายการข้อมูลโครงการ")
 if search_query:
     st.write(f"กำลังกรองข้อมูลด้วยคำค้นหา: **{search_query}**")
