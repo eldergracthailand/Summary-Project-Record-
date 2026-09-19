@@ -44,31 +44,29 @@ search_query = st.text_input("พิมพ์คำค้นหา...", placehol
 
 st.markdown("---")
 
-# ==========================================
-# 📌 นำโค้ดดึงข้อมูล Google Sheets เดิมของคุณมาใส่ตรงนี้ครับ!
-# ตัวอย่างเช่น: 
-# df = pd.read_csv("ลิงก์ CSV ของ Google Sheets คุณ")
-# หรือโค้ดเดิมที่คุณเคยใช้ดึง Google Sheets
-# ==========================================
-# (ตัวอย่างการดึงข้อมูล ให้เปลี่ยนบรรทัดล่างนี้เป็นโค้ดดึง Google Sheets ของคุณจริง ๆ)
-try:
-    # แทนที่บรรทัดด้านล่างนี้ด้วยโค้ดดึงข้อมูล Google Sheets เดิมของคุณ
-    # เช่น df = pd.read_csv("YOUR_GOOGLE_SHEET_CSV_URL")
-    
-    # อันนี้เป็นโค้ดดึงข้อมูลตัวอย่างเดิมที่คุณเคยใช้:
-    df = pd.read_csv("https://docs.google.com/spreadsheets/d/your_sheet_id/export?format=csv") # <--- เปลี่ยนตรงนี้เป็นลิงก์ของคุณ
-    
-except Exception as e:
-    # หากยังไม่ได้ใส่ลิงก์จริง ให้สร้างตารางเปล่าไว้ก่อนเพื่อไม่ให้เว็บพัง
-    df = pd.DataFrame(columns=["No.Job", "ชื่อโครงการ", "สถานะ"])
+# --- 📌 ดึงข้อมูลจริงจาก Google Sheets ตามลิงก์ที่คุณส่งมา ---
+sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTLK92gAXsak5e9HNDcjPngKWXNdOTFmojlq55hMKp-Ak48QNWDcHGRs4fUBWDw/pub?gid=2143365497&single=true&output=csv"
 
-# --- ระบบกรองข้อมูลด้วยช่องค้นหา ---
-if search_query:
+try:
+    df = pd.read_csv(sheet_url)
+except Exception as e:
+    df = pd.DataFrame()
+    st.error("ไม่สามารถเชื่อมต่อข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบการเผยแพร่เว็บอีกครั้ง")
+
+# --- ระบบกรองข้อมูลด้วยช่องค้นหา (ไม่ให้ข้อมูลหายหรือขึ้นคำว่า empty) ---
+if not df.empty and search_query:
     mask = df.astype(str).apply(lambda x: x.str.contains(search_query, case=False, na=False)).any(axis=1)
     filtered_df = df[mask]
+    # ถ้าพิมพ์ค้นหาแล้วไม่เจอข้อมูล ให้ดึงตารางทั้งหมดกลับมาแสดงเพื่อไม่ให้ตารางว่างเปล่า
+    if filtered_df.empty:
+        filtered_df = df
+        st.warning(f"ไม่พบข้อมูลที่ตรงกับ '{search_query}' กำลังแสดงข้อมูลทั้งหมดครับ")
 else:
     filtered_df = df
 
 # แสดงผลตารางข้อมูล
 st.subheader("📋 รายการข้อมูลโครงการ")
-st.dataframe(filtered_df, use_container_width=True)
+if not filtered_df.empty:
+    st.dataframe(filtered_df, use_container_width=True)
+else:
+    st.info("ยังไม่มีข้อมูลใน Google Sheets ครับ")
