@@ -13,7 +13,7 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔒 PERMATECH ASIA </h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔒 Permatech Asia Internal Portal</h2>", unsafe_allow_html=True)
     password = st.text_input("กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ:", type="password")
     if st.button("เข้าสู่ระบบ", use_container_width=True):
         if password == "PMA":
@@ -40,28 +40,26 @@ st.markdown("---")
 
 # 🔍 ช่องค้นหาข้อมูล
 st.markdown("### 🔍 ค้นหาข้อมูล")
-search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อลูกค้า, No.Job")
+search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อโครงการ, No.Job")
 
 st.markdown("---")
 
-# --- 📌 ดึงข้อมูลจาก Google Sheets ตามที่คุณส่งมาล่าสุด ---
-sheet_url = "Https://docs.google.com/spreadsheets/d/e/2PACX-1vSTLK92gAXsaK5e9HNDcjPnGkWXNdOTFmojqlq55hMKp-Ak48QNWDcHGRs4fUBWDw/pub?gid=2143365497&single=true&output=csv"
-
-@st.cache_data(ttl=10)
-def load_data(url):
-    return pd.read_csv(url)
-
+# --- 📌 ดึงข้อมูลจาก Google Sheets ผ่าน Secrets (ปลอดภัย ไม่โชว์ลิงก์ในโค้ด) ---
 try:
-    # ลองดึงข้อมูล
+    sheet_url = st.secrets["SHEET_URL"]
+    
+    @st.cache_data(ttl=10)
+    def load_data(url):
+        return pd.read_csv(url)
+
     df = load_data(sheet_url)
 except Exception as e:
     df = pd.DataFrame()
-    # แสดง Error ที่แท้จริงออกมาบนหน้าจอเพื่อตรวจสอบ
-    st.error(f"รายละเอียดข้อผิดพลาดในการดึงข้อมูล: {e}")
+    st.warning("⚠️ กำลังรอการตั้งค่าลิงก์ใน Secrets หรือไม่สามารถเชื่อมต่อข้อมูลได้")
 
 # --- ระบบตรวจสอบและแสดงผลตาราง ---
 if df.empty:
-    st.warning("⚠️ ยังไม่สามารถดึงข้อมูลมาแสดงได้ กรุณาตรวจสอบว่าลิงก์ Pub to Web ถูกต้อง หรือสถานะชีตยังเปิดแชร์สาธารณะอยู่หรือไม่")
+    st.info("💡 กรุณาตรวจสอบว่าได้บันทึก `SHEET_URL` ในเมนู Settings -> Secrets บน Streamlit เรียบร้อยแล้วหรือยัง")
 else:
     # ระบบกรองข้อมูลด้วยช่องค้นหา
     if search_query:
