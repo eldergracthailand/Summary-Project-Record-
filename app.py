@@ -23,7 +23,7 @@ if not st.session_state.authenticated:
             st.error("รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
     st.stop()
 
-# --- แถบด้านข้าง (Sidebar) ตามแบบที่คุณต้องการ ---
+# --- แถบด้านข้าง (Sidebar) ---
 with st.sidebar:
     st.markdown("### 🏢 Permatech Asia")
     st.markdown("<p style='color: gray; font-size: 13px; margin-top: -15px;'>Summary Project Record</p>", unsafe_allow_html=True)
@@ -44,29 +44,32 @@ search_query = st.text_input("พิมพ์คำค้นหา...", placehol
 
 st.markdown("---")
 
-# --- 📌 ดึงข้อมูลจริงจาก Google Sheets ตามลิงก์ที่คุณส่งมา ---
+# --- 📌 ดึงข้อมูลจาก Google Sheets ---
 sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTLK92gAXsak5e9HNDcjPngKWXNdOTFmojlq55hMKp-Ak48QNWDcHGRs4fUBWDw/pub?gid=2143365497&single=true&output=csv"
 
+@st.cache_data(ttl=60) # ช่วยแคชข้อมูลเพื่อให้เว็บโหลดไวและเสถียรขึ้น
+def load_data(url):
+    return pd.read_csv(url)
+
 try:
-    df = pd.read_csv(sheet_url)
+    df = load_data(sheet_url)
 except Exception as e:
     df = pd.DataFrame()
-    st.error("ไม่สามารถเชื่อมต่อข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบการเผยแพร่เว็บอีกครั้ง")
 
-# --- ระบบกรองข้อมูลด้วยช่องค้นหา (ไม่ให้ข้อมูลหายหรือขึ้นคำว่า empty) ---
-if not df.empty and search_query:
-    mask = df.astype(str).apply(lambda x: x.str.contains(search_query, case=False, na=False)).any(axis=1)
-    filtered_df = df[mask]
-    # ถ้าพิมพ์ค้นหาแล้วไม่เจอข้อมูล ให้ดึงตารางทั้งหมดกลับมาแสดงเพื่อไม่ให้ตารางว่างเปล่า
-    if filtered_df.empty:
+# --- ระบบตรวจสอบและแสดงผลตาราง ---
+if df.empty:
+    st.error("⚠️ ไม่สามารถดึงข้อมูลจาก Google Sheets ได้ กรุณาไปที่ Google Sheets ของคุณ -> เลือก ไฟล์ (File) -> แชร์ (Share) -> เผยแพร่เว็บ (Publish to web) -> แล้วกดปุ่ม 'เผยแพร่ซ้ำ' (Republish) อีกครั้งครับ")
+else:
+    # ระบบกรองข้อมูลด้วยช่องค้นหา
+    if search_query:
+        mask = df.astype(str).apply(lambda x: x.str.contains(search_query, case=False, na=False)).any(axis=1)
+        filtered_df = df[mask]
+        if filtered_df.empty:
+            filtered_df = df
+            st.warning(f"ไม่พบข้อมูลที่ตรงกับ '{search_query}' กำลังแสดงข้อมูลทั้งหมดครับ")
+    else:
         filtered_df = df
-        st.warning(f"ไม่พบข้อมูลที่ตรงกับ '{search_query}' กำลังแสดงข้อมูลทั้งหมดครับ")
-else:
-    filtered_df = df
 
-# แสดงผลตารางข้อมูล
-st.subheader("📋 รายการข้อมูลโครงการ")
-if not filtered_df.empty:
+    # แสดงผลตารางข้อมูล
+    st.subheader("📋 รายการข้อมูลโครงการ")
     st.dataframe(filtered_df, use_container_width=True)
-else:
-    st.info("ยังไม่มีข้อมูลใน Google Sheets ครับ")
