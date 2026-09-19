@@ -40,7 +40,7 @@ st.markdown("---")
 
 # 🔍 ช่องค้นหาข้อมูล
 st.markdown("### 🔍 ค้นหาข้อมูล")
-search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อโครงการ, No.Job")
+search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อลูกค้า, No.Job")
 
 st.markdown("---")
 
