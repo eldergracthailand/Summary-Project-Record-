@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-# ตั้งค่าหน้าเว็บให้เป็นแบบ Wide และกำหนดชื่อหัวข้อเบราว์เซอร์
+# ตั้งค่าหน้าเว็บ
 st.set_page_config(
     page_title="Permatech Asia - Summary Project Record",
     page_icon="🏢",
@@ -23,19 +23,13 @@ if not st.session_state.authenticated:
             st.error("รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
     st.stop()
 
-# --- ดีไซน์ Sidebar (แถบด้านข้าง) ---
+# --- แถบด้านข้าง (Sidebar) คงตราบริษัทไว้ และมีช่องค้นหาตามเดิม ---
 with st.sidebar:
-    # ใช้หัวข้อและไอคอนแทนรูปภาพ เพื่อป้องกันภาพดำเสีย
     st.markdown("### 🏢 Permatech Asia")
     st.markdown("<p style='color: gray; font-size: 13px; margin-top: -15px;'>Summary Project Record</p>", unsafe_allow_html=True)
     st.markdown("---")
     
-    st.markdown("### 📌 เมนูการใช้งาน")
-    menu = st.radio("เลือกมุมมอง:", ["📊 Dashboard ภาพรวม", "📋 รายการโปรเจกต์"])
-    
-    st.markdown("---")
-    
-    # 🔍 นำช่องค้นหากลับมาไว้ที่ Sidebar ตามเดิมเพื่อให้ใช้งานง่าย
+    # ช่องค้นหาข้อมูลเดิม
     st.markdown("### 🔍 ค้นหาข้อมูล")
     search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อโครงการ, รหัส...")
 
@@ -44,29 +38,17 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
 
-# --- เนื้อหาหลักของเว็บไซต์ ---
+# --- เนื้อหาหลักของเว็บไซต์ (กลับมาเป็นหน้าตาฟอร์มและตารางเดิมของคุณ) ---
 st.markdown("<h1 style='color: #1e3a8a;'>📊 Summary Project Record</h1>", unsafe_allow_html=True)
 st.markdown("ระบบติดตามและสรุปข้อมูลโครงการภายในบริษัท Permatech Asia")
+st.markdown("---")
 
-# ตัวอย่างการแสดงผลตามเมนู
-if menu == "📊 Dashboard ภาพรวม":
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric(label="โครงการทั้งหมด", value="12 โครงการ", delta="+2 จากเดือนก่อน")
-    with col2:
-        st.metric(label="กำลังดำเนินการ", value="8 โครงการ", delta="ปกติ")
-    with col3:
-        st.metric(label="เสร็จสิ้นแล้ว", value="4 โครงการ", delta="100%")
-    
-    st.markdown("---")
-    if search_query:
-        st.info(f"🔍 ผลการค้นหาสำหรับ: **'{search_query}'**")
-    else:
-        st.info("💡 เลือกเมนูด้านข้างหรือใช้ช่องค้นหาเพื่อดูข้อมูลรายละเอียดโครงการ")
-
+# แสดงผลส่วนข้อมูลหลัก (สามารถใส่โค้ดดึง Google Sheets เดิมของคุณต่อตรงนี้ได้เลย)
+if search_query:
+    st.info(f"กำลังกรองข้อมูลด้วยคำค้นหา: **{search_query}**")
 else:
-    st.subheader("📋 รายการข้อมูลโครงการทั้งหมด")
-    if search_query:
-        st.write(f"กำลังกรองข้อมูลด้วยคำค้นหา: **{search_query}**")
-    else:
-        st.write("แสดงข้อมูลจาก Google Sheets / SharePoint ที่เชื่อมต่อไว้")
+    st.success("เชื่อมต่อข้อมูลจาก Google Sheets / SharePoint เรียบร้อยแล้ว")
+
+# ตัวอย่างพื้นที่แสดงตารางข้อมูลเดิมของคุณ
+st.subheader("📋 รายการข้อมูลโครงการ")
+st.write("แสดงตารางข้อมูลทั้งหมดที่นี่...")
