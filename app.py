@@ -3,6 +3,47 @@ import streamlit as st
 
 st.set_page_config(page_title="Summary Project Record", page_icon="📊", layout="wide")
 
+
+# ฟังก์ชันตรวจสอบรหัสผ่าน
+def check_password():
+  """Returns True if the user had the correct password."""
+
+  def password_entered():
+    if st.session_state["password"] == "PMA":
+      st.session_state["password_correct"] = True
+      del st.session_state["password"]  # don't store password
+    else:
+      st.session_state["password_correct"] = False
+
+  if "password_correct" not in st.session_state:
+    # First run, show input for password.
+    st.text_input(
+        "🔒 กรุณากรอกรหัสผ่านเพื่อเข้าใช้งานระบบ",
+        type="password",
+        on_change=password_entered,
+        key="password",
+    )
+    return False
+  elif not st.session_state["password_correct"]:
+    # Password not correct, show input + error.
+    st.text_input(
+        "🔒 กรุณากรอกรหัสผ่านเพื่อเข้าใช้งานระบบ",
+        type="password",
+        on_change=password_entered,
+        key="password",
+    )
+    st.error("😕 รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
+    return False
+  else:
+    # Password correct.
+    return True
+
+
+# ถ้ายังไม่ได้ใส่รหัสผ่าน หรือใส่ผิด จะหยุดการทำงานตรงนี้และไม่แสดงข้อมูล
+if not check_password():
+  st.stop()
+
+# --- ส่วนของแอปหลัก (จะแสดงต่อเมื่อใส่รหัสผ่านถูกต้องแล้วเท่านั้น) ---
 st.title("📊 ระบบค้นหาข้อมูล Summary Project Record")
 st.write("พิมพ์คำค้นหาเพื่อดูข้อมูลโครงการ (ข้อมูลนี้สำหรับค้นหาเท่านั้น)")
 
@@ -12,6 +53,7 @@ def load_data():
   sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTLK92gAXsaK5e9HNDcjPnGkWXNdOTFmojqlq55hMKp-Ak48QNWDcHGRs4fUBWDw/pub?gid=2143365497&single=true&output=csv"
   df = pd.read_csv(sheet_url)
   return df
+
 
 try:
   df = load_data()
