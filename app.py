@@ -1,9 +1,10 @@
+import pandas as pd
 import streamlit as st
 
 # ตั้งค่าหน้าเว็บให้เป็นแบบ Wide และกำหนดชื่อหัวข้อเบราว์เซอร์
 st.set_page_config(
     page_title="Permatech Asia - Summary Project Record",
-    page_icon="📊",
+    page_icon="🏢",
     layout="wide"
 )
 
@@ -24,15 +25,20 @@ if not st.session_state.authenticated:
 
 # --- ดีไซน์ Sidebar (แถบด้านข้าง) ---
 with st.sidebar:
-    # แสดงโลโก้และชื่อบริษัท (สามารถเปลี่ยน URL รูปโลโก้ของคุณได้ตรงนี้)
-    st.image("https://i.imgur.com/7k12345.png", width=80) # หรือใช้ไฟล์ภาพโลโก้ของคุณ
-    st.markdown("### **Permatech Asia**")
-    st.markdown("<p style='color: gray; font-size: 14px;'>Summary Project Record</p>", unsafe_allow_html=True)
+    # ใช้หัวข้อและไอคอนแทนรูปภาพ เพื่อป้องกันภาพดำเสีย
+    st.markdown("### 🏢 Permatech Asia")
+    st.markdown("<p style='color: gray; font-size: 13px; margin-top: -15px;'>Summary Project Record</p>", unsafe_allow_html=True)
     st.markdown("---")
     
     st.markdown("### 📌 เมนูการใช้งาน")
-    menu = st.radio("เลือกมุมมอง:", ["📊 Dashboard ภาพรวม", "📋 ราย100% รายการโปรเจกต์"])
+    menu = st.radio("เลือกมุมมอง:", ["📊 Dashboard ภาพรวม", "📋 รายการโปรเจกต์"])
     
+    st.markdown("---")
+    
+    # 🔍 นำช่องค้นหากลับมาไว้ที่ Sidebar ตามเดิมเพื่อให้ใช้งานง่าย
+    st.markdown("### 🔍 ค้นหาข้อมูล")
+    search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อโครงการ, รหัส...")
+
     st.markdown("---")
     if st.button("ออกจากระบบ", use_container_width=True):
         st.session_state.authenticated = False
@@ -40,9 +46,9 @@ with st.sidebar:
 
 # --- เนื้อหาหลักของเว็บไซต์ ---
 st.markdown("<h1 style='color: #1e3a8a;'>📊 Summary Project Record</h1>", unsafe_allow_html=True)
-st.markdown("ยินดีต้อนรับเข้าสู่ระบบติดตามและสรุปข้อมูลโครงการภายในของบริษัท Permatech Asia ครับ")
+st.markdown("ระบบติดตามและสรุปข้อมูลโครงการภายในบริษัท Permatech Asia")
 
-# ตัวอย่างการแบ่งสัดส่วนเนื้อหา
+# ตัวอย่างการแสดงผลตามเมนู
 if menu == "📊 Dashboard ภาพรวม":
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -53,8 +59,14 @@ if menu == "📊 Dashboard ภาพรวม":
         st.metric(label="เสร็จสิ้นแล้ว", value="4 โครงการ", delta="100%")
     
     st.markdown("---")
-    st.info("💡 **คำแนะนำ:** คุณสามารถดึงข้อมูลอัปเดตล่าสุดจาก Google Sheets หรือจัดการข้อมูลผ่านแถบเมนูด้านข้างได้ทันที")
+    if search_query:
+        st.info(f"🔍 ผลการค้นหาสำหรับ: **'{search_query}'**")
+    else:
+        st.info("💡 เลือกเมนูด้านข้างหรือใช้ช่องค้นหาเพื่อดูข้อมูลรายละเอียดโครงการ")
 
 else:
-    st.subheader("📋 รายการข้อมูลโครงการ")
-    st.write("(แสดงตารางข้อมูลโครงการจาก Google Sheets ที่นี่...)")
+    st.subheader("📋 รายการข้อมูลโครงการทั้งหมด")
+    if search_query:
+        st.write(f"กำลังกรองข้อมูลด้วยคำค้นหา: **{search_query}**")
+    else:
+        st.write("แสดงข้อมูลจาก Google Sheets / SharePoint ที่เชื่อมต่อไว้")
