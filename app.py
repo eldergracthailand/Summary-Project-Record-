@@ -44,21 +44,24 @@ search_query = st.text_input("พิมพ์คำค้นหา...", placehol
 
 st.markdown("---")
 
-# --- 📌 ดึงข้อมูลจาก Google Sheets ---
-sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTLK92gAXsak5e9HNDcjPngKWXNdOTFmojlq55hMKp-Ak48QNWDcHGRs4fUBWDw/pub?gid=2143365497&single=true&output=csv"
+# --- 📌 ดึงข้อมูลจาก Google Sheets ตามที่คุณส่งมาล่าสุด ---
+sheet_url = "Https://docs.google.com/spreadsheets/d/e/2PACX-1vSTLK92gAXsaK5e9HNDcjPnGkWXNdOTFmojqlq55hMKp-Ak48QNWDcHGRs4fUBWDw/pub?gid=2143365497&single=true&output=csv"
 
-@st.cache_data(ttl=60) # ช่วยแคชข้อมูลเพื่อให้เว็บโหลดไวและเสถียรขึ้น
+@st.cache_data(ttl=10)
 def load_data(url):
     return pd.read_csv(url)
 
 try:
+    # ลองดึงข้อมูล
     df = load_data(sheet_url)
 except Exception as e:
     df = pd.DataFrame()
+    # แสดง Error ที่แท้จริงออกมาบนหน้าจอเพื่อตรวจสอบ
+    st.error(f"รายละเอียดข้อผิดพลาดในการดึงข้อมูล: {e}")
 
 # --- ระบบตรวจสอบและแสดงผลตาราง ---
 if df.empty:
-    st.error("⚠️ ไม่สามารถดึงข้อมูลจาก Google Sheets ได้ กรุณาไปที่ Google Sheets ของคุณ -> เลือก ไฟล์ (File) -> แชร์ (Share) -> เผยแพร่เว็บ (Publish to web) -> แล้วกดปุ่ม 'เผยแพร่ซ้ำ' (Republish) อีกครั้งครับ")
+    st.warning("⚠️ ยังไม่สามารถดึงข้อมูลมาแสดงได้ กรุณาตรวจสอบว่าลิงก์ Pub to Web ถูกต้อง หรือสถานะชีตยังเปิดแชร์สาธารณะอยู่หรือไม่")
 else:
     # ระบบกรองข้อมูลด้วยช่องค้นหา
     if search_query:
