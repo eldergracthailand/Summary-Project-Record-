@@ -23,12 +23,11 @@ if not st.session_state.authenticated:
             st.error("รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
     st.stop()
 
-# --- แถบด้านข้าง (Sidebar) ตามแบบเป๊ะ ---
+# --- แถบด้านข้าง (Sidebar) ---
 with st.sidebar:
     st.markdown("### 🏢 Permatech Asia")
     st.markdown("<p style='color: gray; font-size: 13px; margin-top: -15px;'>Summary Project Record</p>", unsafe_allow_html=True)
     
-    # ดันปุ่มออกจากระบบลงมาด้านล่างสุดให้เหมือนในภาพ
     st.markdown("<br>" * 15, unsafe_allow_html=True)
     if st.button("ออกจากระบบ", use_container_width=True):
         st.session_state.authenticated = False
@@ -39,15 +38,31 @@ st.markdown("<h1 style='color: #1e3a8a;'>📊 Summary Project Record</h1>", unsa
 st.markdown("สรุปข้อมูลโครงการภายในบริษัท Permatech Asia")
 st.markdown("---")
 
-# 🔍 ช่องค้นหาตรงกลางหน้าจอตามแบบ
+# 🔍 ช่องค้นหาข้อมูล
 st.markdown("### 🔍 ค้นหาข้อมูล")
 search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อโครงการ, No.Job")
 
 st.markdown("---")
 
-# พื้นที่แสดงตารางข้อมูล
-st.subheader("📋 รายการข้อมูลโครงการ")
+# --- 📌 ส่วนดึงข้อมูลและระบบกรองข้อมูล (นำตารางของคุณมาใส่ตรงนี้) ---
+# ตัวอย่าง สมมติว่าคุณมี DataFrame ชื่อ df (ให้แทนที่ df ด้วยตัวแปรดึงข้อมูล Google Sheets ของคุณจริง ๆ)
+# เช่น df = pd.read_csv("ลิงก์ Google Sheets ของคุณ")
+# โค้ดจำลองสำหรับทดสอบ (ให้เปลี่ยนเป็นข้อมูลจริงของคุณ):
+data = {
+    "No.Job": ["JOB-001", "JOB-002", "JOB-003", "JOB-004"],
+    "ชื่อโครงการ": ["ระบบติดตามงาน", "พัฒนาแอปภายใน", "ปรับปรุงระบบฐานข้อมูล", "ติดตั้งอุปกรณ์เน็ตเวิร์ก"],
+    "สถานะ": ["กำลังดำเนินการ", "เสร็จสิ้น", "กำลังดำเนินการ", "รอดำเนินการ"]
+}
+df = pd.DataFrame(data)
+
+# ⚙️ ระบบกรองข้อมูลจากช่องค้นหา
 if search_query:
-    st.write(f"กำลังกรองข้อมูลด้วยคำค้นหา: **{search_query}**")
+    # แปลงข้อความในตารางและคำค้นหาเป็นตัวพิมพ์เล็กทั้งหมด เพื่อให้ค้นหาง่าย (ไม่ 0 และไม่ต้องสนตัวพิมพ์เล็กใหญ่)
+    mask = df.astype(str).apply(lambda x: x.str.contains(search_query, case=False, na=False)).any(axis=1)
+    filtered_df = df[mask]
 else:
-    st.write("แสดงตารางข้อมูลทั้งหมดที่นี่...")
+    filtered_df = df
+
+# แสดงผลตารางข้อมูล
+st.subheader("📋 รายการข้อมูลโครงการ")
+st.dataframe(filtered_df, use_container_width=True)
