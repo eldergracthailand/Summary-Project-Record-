@@ -1,76 +1,110 @@
 import pandas as pd
 import streamlit as st
 
-# ตั้งค่าหน้าเว็บ
-st.set_page_config(
-    page_title="Permatech Asia - Summary Project Record",
-    page_icon="🏢",
-    layout="wide"
-)
+st.set_page_config(page_title="PR Catalog", page_icon="🔍", layout="wide")
 
-# --- ส่วนของการใส่รหัสผ่าน (Password Protection) ---
+# --- ส่วนของการใส่รหัสผ่าน (Password Protection) ผ่าน Secrets ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔒 Permatech Asia </h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔒 Internal Portal Login</h2>", unsafe_allow_html=True)
     password = st.text_input("กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ:", type="password")
+    
     if st.button("เข้าสู่ระบบ", use_container_width=True):
-        if password == "PMA":
+        # ดึงรหัสผ่านจาก st.secrets มาเทียบ (ปลอดภัย ไม่โชว์ในโค้ด)
+        correct_password = st.secrets.get("APP_PASSWORD", "PMA") # ถ้าไม่ได้ตั้งใน secrets จะใช้ "PMA" เป็นค่าสำรอง
+        
+        if password == correct_password:
             st.session_state.authenticated = True
             st.rerun()
         else:
             st.error("รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
     st.stop()
 
-# --- แถบด้านข้าง (Sidebar) ---
+# --- แถบด้านข้าง (Sidebar) สำหรับออกจากระบบ ---
 with st.sidebar:
-    st.markdown("### 🏢 Permatech Asia")
-    st.markdown("<p style='color: gray; font-size: 13px; margin-top: -15px;'>Summary Project Record</p>", unsafe_allow_html=True)
-    
-    st.markdown("<br>" * 15, unsafe_allow_html=True)
+    st.markdown("### 🏢 เมนูจัดการ")
     if st.button("ออกจากระบบ", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
 
-# --- เนื้อหาหลักของเว็บไซต์ ---
-st.markdown("<h1 style='color: #1e3a8a;'>📊 Summary Project Record</h1>", unsafe_allow_html=True)
-st.markdown("สรุปข้อมูลโครงการภายในบริษัท Permatech Asia")
-st.markdown("---")
+# --- ส่วนเนื้อหาหลักและระบบค้นหาแคตตาล็อกของคุณ ---
+st.title("📚 ระบบค้นหาข้อมูลแคตตาล็อกอุปกรณ์(PR)  ")
+st.write("พิมพ์คำค้นหาเพื่อดูข้อมูล PR (ข้อมูลนี้สำหรับค้นหาเท่านั้น)")
 
-# 🔍 ช่องค้นหาข้อมูล
-st.markdown("### 🔍 ค้นหาข้อมูล")
-search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อโครงการ, No.Job")
+# ส่วนดึงข้อมูลจาก Google Sheets ผ่าน Secrets
+@st.cache_data(ttl=600)
+def load_data():
+  sheet_url = st.secrets["SHEET_URL"] # ดึงลิงก์ซีทจาก Secrets
+  df = pd.read_csv(sheet_url)
+  return df
 
-st.markdown("---")
-
-# --- 📌 ดึงข้อมูลจาก Google Sheets ผ่าน Secrets (ปลอดภัย ไม่โชว์ลิงก์ในโค้ด) ---
 try:
-    sheet_url = st.secrets["SHEET_URL"]
-    
-    @st.cache_data(ttl=10)
-    def load_data(url):
-        return pd.read_csv(url)
+  df = load_data()
 
-    df = load_data(sheet_url)
-except Exception as e:
-    df = pd.DataFrame()
-    st.warning("⚠️ กำลังรอการตั้งค่าลิงก์ใน Secrets หรือไม่สามารถเชื่อมต่อข้อมูลได้")
+  with st.form(key='search_form'):
+    search_query = st.text_input(
+        "🔍 ค้นหาข้อมูล (พิมพ์คีย์เวิร์ด เช่น ชื่ออุปกรณ์ โค้ดสินค้าหรือหมวดหมู่):"
+    )
+    submit_button = st.form_submit_button(label="🔍 ค้นหา")
 
-# --- ระบบตรวจสอบและแสดงผลตาราง ---
-if df.empty:
-    st.info("💡 กรุณาตรวจสอบว่าได้บันทึก `SHEET_URL` ในเมนู Settings -> Secrets บน Streamlit เรียบร้อยแล้วหรือยัง")
-else:
-    # ระบบกรองข้อมูลด้วยช่องค้นหา
-    if search_query:
-        mask = df.astype(str).apply(lambda x: x.str.contains(search_query, case=False, na=False)).any(axis=1)
-        filtered_df = df[mask]
-        if filtered_df.empty:
-            filtered_df = df
-            st.warning(f"ไม่พบข้อมูลที่ตรงกับ '{search_query}' กำลังแสดงข้อมูลทั้งหมดครับ")
+  if submit_button:
+    if search_query.strip() != "":
+      mask = (
+          df.astype(str)
+          .apply(lambda x: x.str.contains(search_query, case=False, na=False))
+          .any(axis=1)
+      )
+      result_df = df[mask]
+
+      st.write(
+          f"ผลการค้นหา: พบ {len(result_df)} รายการสำหรับ '{search_query}'"
+      )
+
+      if not result_df.empty:
+        display_df = result_df.copy()
+        if "ลิงก์รูปภาพ" in display_df.columns:
+          display_df = display_df.drop(columns=["ลิงก์รูปภาพ"])
+
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+        st.subheader("🖼️ คลิกเพื่อดูรูปภาพของรายการที่พบ")
+        for index, row in result_df.iterrows():
+          if (
+              "ลิงก์รูปภาพ" in row
+              and pd.notna(row["ลิงก์รูปภาพ"])
+              and str(row["ลิงก์รูปภาพ"]).strip() != ""
+          ):
+            item_name = (
+                str(row["ชื่อสินค้า"])
+                if "ชื่อสินค้า" in row and pd.notna(row["ชื่อสินค้า"])
+                else f"รายการที่ {index+1}"
+            )
+            
+            item_code = (
+                str(row["รหัสสินค้า"])
+                if "รหัสสินค้า" in row and pd.notna(row["รหัสสินค้า"]) and str(row["รหัสสินค้า"]).strip().lower() != "nan"
+                else ""
+            )
+            
+            link_url = str(row["ลิงก์รูปภาพ"]).strip()
+
+            if item_code:
+              button_label = f"🔗 ดูรูปภาพ: {item_code} - {item_name}"
+            else:
+              button_label = f"🔗 ดูรูปภาพ: {item_name}"
+
+            st.link_button(button_label, link_url)
+      else:
+        st.warning("ไม่พบข้อมูลที่ค้นหา")
     else:
-        filtered_df = df
+      st.warning("กรุณากรอกคำค้นหาก่อนกดปุ่มค้นหา")
+  else:
+    st.info("กรุณาพิมพ์คำค้นหาแล้วกดปุ่ม 'ค้นหา'")
 
-    # แสดงผลตารางข้อมูล
-    st.subheader("📋 รายการข้อมูลโครงการ")
-    st.dataframe(filtered_df, use_container_width=True)
+except Exception as e:
+  st.error(
+      "ยังไม่ได้ตั้งค่า `SHEET_URL` หรือ `APP_PASSWORD` ใน Streamlit Secrets กรุณาตรวจสอบการตั้งค่า"
+  )
