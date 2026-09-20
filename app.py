@@ -3,19 +3,16 @@ import streamlit as st
 
 st.set_page_config(page_title="PR Catalog", page_icon="🔍", layout="wide")
 
-# --- ส่วนของการใส่รหัสผ่าน (Password Protection) ผ่าน Secrets ---
+# --- ส่วนของการใส่รหัสผ่าน (Password Protection) ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔒 Internal Portal Login</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔒 ระบบเข้าสู่ระบบภายใน</h2>", unsafe_allow_html=True)
     password = st.text_input("กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ:", type="password")
     
     if st.button("เข้าสู่ระบบ", use_container_width=True):
-        # ดึงรหัสผ่านจาก st.secrets มาเทียบ (ปลอดภัย ไม่โชว์ในโค้ด)
-        correct_password = st.secrets.get("APP_PASSWORD", "PMA") # ถ้าไม่ได้ตั้งใน secrets จะใช้ "PMA" เป็นค่าสำรอง
-        
-        if password == correct_password:
+        if password == "PMA":
             st.session_state.authenticated = True
             st.rerun()
         else:
@@ -29,20 +26,21 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
 
-# --- ส่วนเนื้อหาหลักและระบบค้นหาแคตตาล็อกของคุณ ---
-st.title("📚 ระบบค้นหาข้อมูลแคตตาล็อกอุปกรณ์(PR)  ")
+# --- ส่วนเนื้อหาหลักของแอปพลิเคชัน ---
+st.title("📚 ระบบค้นหาข้อมูลแคตตาล็อกอุปกรณ์(PR)")
 st.write("พิมพ์คำค้นหาเพื่อดูข้อมูล PR (ข้อมูลนี้สำหรับค้นหาเท่านั้น)")
 
-# ส่วนดึงข้อมูลจาก Google Sheets ผ่าน Secrets
+# ส่วนดึงข้อมูลจาก Google Sheets (ใส่ลิงก์ของคุณแบบปลอดภัยและตรงจุด)
 @st.cache_data(ttl=600)
 def load_data():
-  sheet_url = st.secrets["SHEET_URL"] # ดึงลิงก์ซีทจาก Secrets
+  sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTNxcG6Zwu5wffcY9sYnrIo6Rukcv5Nw9EbtMU7TyCOR8uW2XGAEThrk-0500Y7ELiVDg_7EeJcitl4/pub?gid=0&single=true&output=csv"
   df = pd.read_csv(sheet_url)
   return df
 
 try:
   df = load_data()
 
+  # ใช้ st.form เพื่อให้มีปุ่มกดค้นหาและกด Enter ได้
   with st.form(key='search_form'):
     search_query = st.text_input(
         "🔍 ค้นหาข้อมูล (พิมพ์คีย์เวิร์ด เช่น ชื่ออุปกรณ์ โค้ดสินค้าหรือหมวดหมู่):"
@@ -63,12 +61,14 @@ try:
       )
 
       if not result_df.empty:
+        # สร้างตารางสำหรับแสดงผล (ซ่อนคอลัมน์ ลิงก์รูปภาพ ไม่ให้รกตาในตาราง)
         display_df = result_df.copy()
         if "ลิงก์รูปภาพ" in display_df.columns:
           display_df = display_df.drop(columns=["ลิงก์รูปภาพ"])
 
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
+        # ส่วนสำหรับแสดงปุ่มคลิกดูรูปภาพ (เคลียร์ค่า nan ออกทั้งหมด)
         st.markdown("---")
         st.subheader("🖼️ คลิกเพื่อดูรูปภาพของรายการที่พบ")
         for index, row in result_df.iterrows():
@@ -83,6 +83,7 @@ try:
                 else f"รายการที่ {index+1}"
             )
             
+            # ตรวจสอบรหัสสินค้า ถ้าไม่มีหรือเป็น nan จะไม่นำมาแสดงให้รก
             item_code = (
                 str(row["รหัสสินค้า"])
                 if "รหัสสินค้า" in row and pd.notna(row["รหัสสินค้า"]) and str(row["รหัสสินค้า"]).strip().lower() != "nan"
@@ -91,6 +92,7 @@ try:
             
             link_url = str(row["ลิงก์รูปภาพ"]).strip()
 
+            # จัดรูปแบบปุ่มตามข้อมูลที่มี
             if item_code:
               button_label = f"🔗 ดูรูปภาพ: {item_code} - {item_name}"
             else:
@@ -106,5 +108,5 @@ try:
 
 except Exception as e:
   st.error(
-      "ยังไม่ได้ตั้งค่า `SHEET_URL` หรือ `APP_PASSWORD` ใน Streamlit Secrets กรุณาตรวจสอบการตั้งค่า"
+      "ไม่สามารถโหลดข้อมูลจาก Google Sheet ได้ กรุณาตรวจสอบลิงก์หรือการเผยแพร่เว็บอีกครั้ง"
   )
