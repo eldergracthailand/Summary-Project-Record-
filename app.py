@@ -1,16 +1,22 @@
+หมายถึง ให้นำโค้ดชุดเชื่อมต่อข้อมูลใหม่ไปวางแทนที่ส่วนดึงข้อมูลเดิมในไฟล์ app.py ครับ เพื่อให้โค้ดวิ่งไปดึงลิงก์ความลับจาก st.secrets["SHEET_URL"] ที่เราเพิ่งบันทึกไว้ในหน้าเว็บเมื่อสักครู่นี้ครับ
+เพื่อให้เห็นภาพชัดเจนและนำไปวางแทนที่ได้ทันที นี่คือ โค้ดฉบับเต็มทั้งหมดของไฟล์ app.py ที่จัดการทุกอย่างให้เรียบร้อยแล้ว (ทั้งหน้าใส่รหัสผ่าน PMA, แถบ Permatech Asia, ช่องค้นหา, และระบบดึงข้อมูลผ่าน st.secrets):
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="PR Catalog", page_icon="🔍", layout="wide")
+# ตั้งค่าหน้าเว็บ
+st.set_page_config(
+    page_title="Permatech Asia - Summary Project Record",
+    page_icon="🏢",
+    layout="wide"
+)
 
 # --- ส่วนของการใส่รหัสผ่าน (Password Protection) ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔒 ระบบเข้าสู่ระบบภายใน</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🔒 Permatech Asia Internal Portal</h2>", unsafe_allow_html=True)
     password = st.text_input("กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ:", type="password")
-    
     if st.button("เข้าสู่ระบบ", use_container_width=True):
         if password == "PMA":
             st.session_state.authenticated = True
@@ -19,94 +25,56 @@ if not st.session_state.authenticated:
             st.error("รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
     st.stop()
 
-# --- แถบด้านข้าง (Sidebar) สำหรับออกจากระบบ ---
+# --- แถบด้านข้าง (Sidebar) ---
 with st.sidebar:
-    st.markdown("### 🏢 เมนูจัดการ")
+    st.markdown("### 🏢 Permatech Asia")
+    st.markdown("<p style='color: gray; font-size: 13px; margin-top: -15px;'>Summary Project Record</p>", unsafe_allow_html=True)
+    
+    st.markdown("<br>" * 15, unsafe_allow_html=True)
     if st.button("ออกจากระบบ", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
 
-# --- ส่วนเนื้อหาหลักของแอปพลิเคชัน ---
-st.title("📚 ระบบค้นหาข้อมูลแคตตาล็อกอุปกรณ์(PR)")
-st.write("พิมพ์คำค้นหาเพื่อดูข้อมูล PR (ข้อมูลนี้สำหรับค้นหาเท่านั้น)")
+# --- เนื้อหาหลักของเว็บไซต์ ---
+st.markdown("<h1 style='color: #1e3a8a;'>📊 Summary Project Record</h1>", unsafe_allow_html=True)
+st.markdown("สรุปข้อมูลโครงการภายในบริษัท Permatech Asia")
+st.markdown("---")
 
-# ส่วนดึงข้อมูลจาก Google Sheets (ใส่ลิงก์ของคุณแบบปลอดภัยและตรงจุด)
-@st.cache_data(ttl=600)
-def load_data():
-  sheet_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTNxcG6Zwu5wffcY9sYnrIo6Rukcv5Nw9EbtMU7TyCOR8uW2XGAEThrk-0500Y7ELiVDg_7EeJcitl4/pub?gid=0&single=true&output=csv"
-  df = pd.read_csv(sheet_url)
-  return df
+# 🔍 ช่องค้นหาข้อมูล
+st.markdown("### 🔍 ค้นหาข้อมูล")
+search_query = st.text_input("พิมพ์คำค้นหา...", placeholder="ชื่อโครงการ, No.Job")
 
+st.markdown("---")
+
+# --- 📌 ดึงข้อมูลจาก Google Sheets ผ่าน Secrets (ปลอดภัย ไม่โชว์ลิงก์ในโค้ด) ---
 try:
-  df = load_data()
+    sheet_url = st.secrets["SHEET_URL"]
+    
+    @st.cache_data(ttl=10)
+    def load_data(url):
+        return pd.read_csv(url)
 
-  # ใช้ st.form เพื่อให้มีปุ่มกดค้นหาและกด Enter ได้
-  with st.form(key='search_form'):
-    search_query = st.text_input(
-        "🔍 ค้นหาข้อมูล (พิมพ์คีย์เวิร์ด เช่น ชื่ออุปกรณ์ โค้ดสินค้าหรือหมวดหมู่):"
-    )
-    submit_button = st.form_submit_button(label="🔍 ค้นหา")
-
-  if submit_button:
-    if search_query.strip() != "":
-      mask = (
-          df.astype(str)
-          .apply(lambda x: x.str.contains(search_query, case=False, na=False))
-          .any(axis=1)
-      )
-      result_df = df[mask]
-
-      st.write(
-          f"ผลการค้นหา: พบ {len(result_df)} รายการสำหรับ '{search_query}'"
-      )
-
-      if not result_df.empty:
-        # สร้างตารางสำหรับแสดงผล (ซ่อนคอลัมน์ ลิงก์รูปภาพ ไม่ให้รกตาในตาราง)
-        display_df = result_df.copy()
-        if "ลิงก์รูปภาพ" in display_df.columns:
-          display_df = display_df.drop(columns=["ลิงก์รูปภาพ"])
-
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
-
-        # ส่วนสำหรับแสดงปุ่มคลิกดูรูปภาพ (เคลียร์ค่า nan ออกทั้งหมด)
-        st.markdown("---")
-        st.subheader("🖼️ คลิกเพื่อดูรูปภาพของรายการที่พบ")
-        for index, row in result_df.iterrows():
-          if (
-              "ลิงก์รูปภาพ" in row
-              and pd.notna(row["ลิงก์รูปภาพ"])
-              and str(row["ลิงก์รูปภาพ"]).strip() != ""
-          ):
-            item_name = (
-                str(row["ชื่อสินค้า"])
-                if "ชื่อสินค้า" in row and pd.notna(row["ชื่อสินค้า"])
-                else f"รายการที่ {index+1}"
-            )
-            
-            # ตรวจสอบรหัสสินค้า ถ้าไม่มีหรือเป็น nan จะไม่นำมาแสดงให้รก
-            item_code = (
-                str(row["รหัสสินค้า"])
-                if "รหัสสินค้า" in row and pd.notna(row["รหัสสินค้า"]) and str(row["รหัสสินค้า"]).strip().lower() != "nan"
-                else ""
-            )
-            
-            link_url = str(row["ลิงก์รูปภาพ"]).strip()
-
-            # จัดรูปแบบปุ่มตามข้อมูลที่มี
-            if item_code:
-              button_label = f"🔗 ดูรูปภาพ: {item_code} - {item_name}"
-            else:
-              button_label = f"🔗 ดูรูปภาพ: {item_name}"
-
-            st.link_button(button_label, link_url)
-      else:
-        st.warning("ไม่พบข้อมูลที่ค้นหา")
-    else:
-      st.warning("กรุณากรอกคำค้นหาก่อนกดปุ่มค้นหา")
-  else:
-    st.info("กรุณาพิมพ์คำค้นหาแล้วกดปุ่ม 'ค้นหา'")
-
+    df = load_data(sheet_url)
 except Exception as e:
-  st.error(
-      "ไม่สามารถโหลดข้อมูลจาก Google Sheet ได้ กรุณาตรวจสอบลิงก์หรือการเผยแพร่เว็บอีกครั้ง"
-  )
+    df = pd.DataFrame()
+    st.warning("⚠️ กำลังรอการตั้งค่าลิงก์ใน Secrets หรือไม่สามารถเชื่อมต่อข้อมูลได้")
+
+# --- ระบบตรวจสอบและแสดงผลตาราง ---
+if df.empty:
+    st.info("💡 กรุณาตรวจสอบว่าได้บันทึก `SHEET_URL` ในเมนู Settings -> Secrets บน Streamlit เรียบร้อยแล้วหรือยัง")
+else:
+    # ระบบกรองข้อมูลด้วยช่องค้นหา
+    if search_query:
+        mask = df.astype(str).apply(lambda x: x.str.contains(search_query, case=False, na=False)).any(axis=1)
+        filtered_df = df[mask]
+        if filtered_df.empty:
+            filtered_df = df
+            st.warning(f"ไม่พบข้อมูลที่ตรงกับ '{search_query}' กำลังแสดงข้อมูลทั้งหมดครับ")
+    else:
+        filtered_df = df
+
+    # แสดงผลตารางข้อมูล
+    st.subheader("📋 รายการข้อมูลโครงการ")
+    st.dataframe(filtered_df, use_container_width=True)
+
+วิธีทำ: ให้คุณ ลบโค้ดเก่าทั้งหมดในไฟล์ app.py ทิ้ง แล้วคัดลอกโค้ดชุดนี้ไปวางแทนที่ทั้งหมด กดบันทึก แล้วรีเฟรชหน้าเว็บแอปพลิเคชันดูได้เลยครับ ข้อมูลจะดึงขึ้นมาแสดงผลโดยที่ลิงก์ถูกซ่อนไว้อย่างปลอดภัยแน่นอนครับ!
